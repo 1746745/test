@@ -1,0 +1,10 @@
+POST http://localhost:7071/api/deleteItem HTTP/1.1
+Content-Type: application/json
+
+{
+  "itemId": "item_01KM77RZ4FJGTZSGN9E8P3XW9F",
+  "itemName": "Sample Item",
+  "lockerId": "locker_123",
+  "category": "Electronics",
+  "status": "Available"
+}

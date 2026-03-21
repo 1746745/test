@@ -1,0 +1,42 @@
+# ロッカー取得
+GET http://localhost:7071/api/getLockers
+
+###
+# ロッカー作成
+POST http://localhost:7071/api/createLocker
+Content-Type: "application/json"
+Access-Control-Allow-Origin: "*"
+Access-Control-Allow-Methods: "*"
+Access-Control-Allow-Headers: "*"
+
+{
+  "lockerName":"test", 
+  "left":"100" , 
+  "top":"100", 
+  "width":"80", 
+  "height":"50"
+}
+
+###
+# ロッカー変更
+POST http://localhost:7071/api/updateLocker
+
+###
+# ロッカー削除
+POST http://localhost:7071/api/deleteLocker
+
+###
+# 備品取得
+GET http://localhost:7071/api/getItems
+
+###
+# 備品作成
+POST http://localhost:7071/api/createItem
+
+###
+# 備品変更
+POST http://localhost:7071/api/updateItem
+
+###
+# 備品削除
+POST http://localhost:7071/api/deleteItem

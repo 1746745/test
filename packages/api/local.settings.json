@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "NODE_TLS_REJECT_UNAUTHORIZED": 0,
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNC_BLOB_STORAGE_UPLOAD": "UseDevelopmentStorage=true",
+    "FUNC_BLOB_STORAGE_WEB": "UseDevelopmentStorage=true",
+    "FUNC_COSMOS_ENDPOINT": "https://localhost:8081",
+    "FUNC_COSMOS_ACCOUNT_KEY": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+    "FUNC_COSMOS_DB_NAME": "FloorMapDB"
+  },
+  "Host": {
+    "CORS": "*"
+  }
+}
