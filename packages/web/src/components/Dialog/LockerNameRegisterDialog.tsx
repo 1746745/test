@@ -14,27 +14,24 @@ interface LockerNameRegisterDialogProps {
   targetLockerName: string;
   /** ロッカー名を更新する関数 */
   setTargetLockerName: React.Dispatch<React.SetStateAction<string>>;
+  /** 選択中のロッカーIDを更新する関数 */
+  setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 /**
  * ロッカー名登録ダイアログ
- *
- * @param param0
- * @returns
  */
 export const LockerNameRegisterDialog = ({
   lockers,
   setLockers,
   targetLockerName,
   setTargetLockerName,
+  setSelectedId,
 }: LockerNameRegisterDialogProps) => {
-  // ダイアログ関連の状態
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [pendingRenameId, setPendingRenameId] = React.useState<string | null>(
-    null,
-  );
+  const [pendingRenameId, setPendingRenameId] = React.useState<string | null>(null);
 
-  // 新規に追加された "name が空の" ロッカーを検知してダイアログを開く
+  // 新規に追加された "lockerName が空の" ロッカーを検知してダイアログを開く
   React.useEffect(() => {
     if (pendingRenameId) return;
     const unnamed = lockers.find(
@@ -47,43 +44,37 @@ export const LockerNameRegisterDialog = ({
     }
   }, [lockers, pendingRenameId]);
 
-  // ダイアログが閉じられたら、名前があれば確定、なければロッカーを削除する
-  React.useEffect(() => {
-    // dialogOpen が false に遷移したタイミングで処理する
-    if (dialogOpen) return;
-    if (!pendingRenameId) return;
-
+  // OKボタンが押されたときの処理
+  const handleDialogSubmit = () => {
     const name = targetLockerName.trim();
-    if (name.length > 0) {
-      const locker = lockers.find((r) => r.id === pendingRenameId);
-      if (locker) {
-        const updatedLocker = { ...locker, lockerName: name };
-        // 名前確定後にDBへ登録し、返却されたIDでstateを更新
-        useCreateLocker(updatedLocker).then((res) => {
-          const dbId = res?.id ?? updatedLocker.id;
-          setLockers((prev) =>
-            prev.map((r) =>
-              r.id === pendingRenameId ? { ...updatedLocker, id: dbId } : r,
-            ),
-          );
-        });
-      }
-    } else {
-      // キャンセルまたは空名の場合は追加した矩形を取り除く
-      setLockers((prev) => prev.filter((r) => r.id !== pendingRenameId));
-    }
+    if (!pendingRenameId || name.length === 0) return;
 
+    const locker = lockers.find((r) => r.id === pendingRenameId);
+    if (!locker) return;
+
+    const updatedLocker = { ...locker, lockerName: name };
+
+    // 名前を同期的にstateへ反映（再検知防止）してからIDをクリア
+    setLockers((prev) =>
+      prev.map((r) => (r.id === pendingRenameId ? updatedLocker : r)),
+    );
     setPendingRenameId(null);
     setTargetLockerName("");
-  }, [dialogOpen, pendingRenameId, targetLockerName, lockers]);
-
-  // ダイアログのOKボタンが押されたときの処理
-  const handleDialogSubmit = (name: string) => {
-    setTargetLockerName(name);
     setDialogOpen(false);
+
+    // 非同期でDBへ登録し、返却されたDBのIDでstateを更新して選択
+    useCreateLocker(updatedLocker).then((res) => {
+      const dbId = res?.id ?? updatedLocker.id;
+      setLockers((prev) =>
+        prev.map((r) =>
+          r.id === updatedLocker.id ? { ...r, id: dbId } : r,
+        ),
+      );
+      setSelectedId(dbId);
+    });
   };
 
-  // ユーザーがキャンセルしたときは pending の矩形を削除して状態をクリアする
+  // キャンセル時は追加した矩形を削除
   const handleDialogCancel = () => {
     if (pendingRenameId) {
       setLockers((prev) => prev.filter((r) => r.id !== pendingRenameId));
@@ -97,9 +88,9 @@ export const LockerNameRegisterDialog = ({
     <>
       <AppDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onCancel={() => handleDialogCancel()}
-        onSubmit={() => handleDialogSubmit(targetLockerName)}
+        onClose={handleDialogCancel}
+        onCancel={handleDialogCancel}
+        onSubmit={handleDialogSubmit}
         title="ロッカー名を入力"
         content={
           <TextField
@@ -111,6 +102,7 @@ export const LockerNameRegisterDialog = ({
             variant="outlined"
             value={targetLockerName}
             onChange={(e) => setTargetLockerName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleDialogSubmit(); }}
           />
         }
         cancelText="キャンセル"

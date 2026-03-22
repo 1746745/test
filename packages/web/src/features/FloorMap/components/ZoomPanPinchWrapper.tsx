@@ -487,6 +487,7 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
               setLockers={setLockers}
               targetLockerName={targetLockerName}
               setTargetLockerName={setTargetLockerName}
+              setSelectedId={setSelectedId}
             />
 
             {/** ロッカー名変更ダイアログ */}
