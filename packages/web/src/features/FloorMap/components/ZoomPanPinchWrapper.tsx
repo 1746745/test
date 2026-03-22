@@ -1,5 +1,6 @@
 import { AppDialog } from "@/components/Dialog/AppDialog";
 import { LockerNameRegisterDialog } from "@/components";
+import { useAuth, UserRole } from "@/auth";
 import { useGetItems, useGetLockers, useUpdateLocker } from "@/hooks/";
 import type { LockerType } from "@/types";
 import { Box, TextField } from "@mui/material";
@@ -18,6 +19,9 @@ interface ZoomPanPinchWrapperProps {
 }
 
 export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperProps) => {
+  const { role } = useAuth();
+  const isAdmin = role === UserRole.Admin;
+
   // コンポーネント全体のref（外部クリック判定用）
   const rootRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -145,8 +149,9 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
       e.preventDefault();
       return;
     }
-    // 左ボタンのみ開始
+    // 左ボタンのみ開始（管理者のみロッカー作成）
     if (e.button !== 0) return;
+    if (!isAdmin) return;
     const coords = getRelativeCoordsFromClient(e.clientX, e.clientY);
     if (!coords) return;
     startPoint.current = coords;
@@ -316,6 +321,9 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
     e.stopPropagation();
     e.preventDefault();
     setSelectedId(r.id);
+
+    // 管理者のみ移動可能
+    if (!isAdmin) return;
 
     const locker: LockerType = {
       id: r.id,
@@ -527,6 +535,7 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
                   onMouseDown={(e) => handleRectMouseDown(e, r)}
                   onDoubleClick={(e) => {
                     e.stopPropagation();
+                    if (!isAdmin) return;
                     setRenamingLocker(r);
                     setRenameValue(r.lockerName);
                   }}
@@ -547,8 +556,8 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
                     zIndex: isSelected ? 5 : 3,
                   }}
                 >
-                  {/* 右下のリサイズハンドル */}
-                  {isSelected && (
+                  {/* 右下のリサイズハンドル（管理者のみ） */}
+                  {isSelected && isAdmin && (
                     <div
                       onMouseDown={(e) => handleResizeMouseDown(e, r)}
                       style={{

@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@azure/msal-browser": "^4.30.0",
+    "@azure/msal-react": "^3.0.29",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.2.0",
@@ -17,8 +19,8 @@
     "@mui/styled-engine": "^7.3.6",
     "date-fns": "^4.1.0",
     "formik": "^2.4.6",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "react-router-dom": "^7.7.0",
     "react-zoom-pan-pinch": "^3.7.0",
     "yup": "^1.6.1"

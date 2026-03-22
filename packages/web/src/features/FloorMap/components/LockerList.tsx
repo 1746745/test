@@ -1,5 +1,6 @@
 import { AppDialog } from "@/components/Dialog/AppDialog";
 import { DeleteButton } from "@/components/Button/DeleteButton";
+import { useAuth, UserRole } from "@/auth";
 import { useDeleteLocker, useGetItems, useUpdateLocker } from "@/hooks";
 import type { LockerType } from "@/types";
 import { Box, Divider, List, ListItem, TextField, Typography } from "@mui/material";
@@ -29,6 +30,9 @@ export const LockerList = ({
   selectedId,
   setSelectedId,
 }: LockerListProps) => {
+  const { role } = useAuth();
+  const isAdmin = role === UserRole.Admin;
+
   /** APIを呼び出してDBデータを取得 */
   React.useEffect(() => {
     const fetchData = async () => {
@@ -85,6 +89,7 @@ export const LockerList = ({
                     sx={{ flex: 1 }}
                     onClick={() => setSelectedId(r.id)}
                     onDoubleClick={() => {
+                      if (!isAdmin) return;
                       setRenamingLocker(r);
                       setRenameValue(r.lockerName);
                     }}
@@ -139,8 +144,8 @@ export const LockerList = ({
                     </Box>
                   </Box>
 
-                  {/** 削除ボタン */}
-                  <DeleteButton
+                  {/** 削除ボタン（管理者のみ） */}
+                  {isAdmin && <DeleteButton
                     onClick={async (e) => {
                       e.stopPropagation();
                       setLockers((prev) => prev.filter((p) => p.id !== r.id));
@@ -149,7 +154,7 @@ export const LockerList = ({
                       // DBから削除
                       await useDeleteLocker(r);
                     }}
-                  />
+                  />}
 
                   {/** TODO 選択されたロッカー内の備品を登録 */}
                 </Box>

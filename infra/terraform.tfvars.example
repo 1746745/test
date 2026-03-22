@@ -1,0 +1,13 @@
+# Azure ADテナントID（Azureポータル → Azure Active Directory → 概要 で確認）
+tenant_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# 管理者ロールを付与するユーザーのオブジェクトID
+# Azureポータル → Azure Active Directory → ユーザー → 対象ユーザー → オブジェクトID で確認
+admin_user_object_ids = [
+  "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+]
+
+# 利用者ロールを付与するユーザーのオブジェクトIDリスト
+user_object_ids = [
+  "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+]
