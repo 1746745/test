@@ -5,7 +5,7 @@ import type { LockerType } from "@/types";
 import { Box, TextField } from "@mui/material";
 import Paper from "@mui/material/Paper";
 import React from "react";
-import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { type ReactZoomPanPinchRef, TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { LockerList } from "./LockerList";
 
 /**
@@ -99,6 +99,17 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
     positionY: number;
   }>({ scale: 1, positionX: 0, positionY: 0 });
 
+  // TransformWrapperへのref（中ボタンパン用）
+  const transformRef = React.useRef<ReactZoomPanPinchRef>(null);
+
+  // 中ボタンドラッグの開始情報
+  const middlePanRef = React.useRef<{
+    startClientX: number;
+    startClientY: number;
+    startPosX: number;
+    startPosY: number;
+  } | null>(null);
+
 
   // 画像内座標取得用（ズーム・パン変換を考慮）
   const getRelativeCoordsFromClient = (clientX: number, clientY: number) => {
@@ -123,6 +134,17 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
    * @returns
    */
   const handleMouseDown = (e: React.MouseEvent) => {
+    // 中ボタン：パン開始
+    if (e.button === 1) {
+      middlePanRef.current = {
+        startClientX: e.clientX,
+        startClientY: e.clientY,
+        startPosX: transformStateRef.current.positionX,
+        startPosY: transformStateRef.current.positionY,
+      };
+      e.preventDefault();
+      return;
+    }
     // 左ボタンのみ開始
     if (e.button !== 0) return;
     const coords = getRelativeCoordsFromClient(e.clientX, e.clientY);
@@ -142,6 +164,25 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
    * @returns
    */
   const handleMouseMove = (e: React.MouseEvent) => {
+    // 中ボタンが実際に押されているときのみパン（e.buttons & 4 で確認）
+    if (middlePanRef.current) {
+      if (e.buttons & 4) {
+        const deltaX = e.clientX - middlePanRef.current.startClientX;
+        const deltaY = e.clientY - middlePanRef.current.startClientY;
+        transformRef.current?.setTransform(
+          middlePanRef.current.startPosX + deltaX,
+          middlePanRef.current.startPosY + deltaY,
+          transformStateRef.current.scale,
+          0,
+        );
+        e.preventDefault();
+        return;
+      } else {
+        // ボタンが離された（Paper外でのmouseupを補足）
+        middlePanRef.current = null;
+      }
+    }
+
     const coords = getRelativeCoordsFromClient(e.clientX, e.clientY);
     if (!coords) return;
 
@@ -190,6 +231,11 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
    * @returns
    */
   const handleMouseUp = (e: React.MouseEvent) => {
+    if (e.button === 1) {
+      middlePanRef.current = null;
+      e.preventDefault();
+      return;
+    }
     if (e.button !== 0) return;
     const coords = getRelativeCoordsFromClient(e.clientX, e.clientY);
 
@@ -385,6 +431,7 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
     <Box ref={rootRef} sx={{ display: "flex", width: "100%", gap: 2 }}>
       <Box sx={{ flex: 1, minWidth: 0 }}>
       <TransformWrapper
+        ref={transformRef}
         onTransformed={(ref) => {
           // ズーム・パン状態を保存
           transformStateRef.current = {
@@ -408,6 +455,7 @@ export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperPro
             // ロッカーの作成/移動などの動作が他のマウス操作に妨害されないようにする
             onMouseDown={(e) => {
               e.stopPropagation();
+              if (e.button === 1) e.preventDefault();
               handleMouseDown(e as unknown as React.MouseEvent);
             }}
             onMouseMove={(e) => {
