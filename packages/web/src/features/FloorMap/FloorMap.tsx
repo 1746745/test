@@ -1,6 +1,8 @@
 import AppHeader from "@/components/AppHeader/AppHeader";
+import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/material/Box";
+import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
@@ -22,15 +24,21 @@ export const FloorMap: React.FC = () => {
 
       <Box sx={{ py: 2, pl: 2 }}>
         <TextField
-          placeholder="備品を検索..."
+          placeholder="備品を検索... (スペース区切りでAND検索)"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          size="small"
-          sx={{ mb: 2, width: 320 }}
+          sx={{ mb: 2, width: 520 }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => setSearchQuery("")}>
+                  <ClearIcon fontSize="small" />
+                </IconButton>
               </InputAdornment>
             ),
           }}
