@@ -36,7 +36,8 @@ export const EquipmentManagement = () => {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   /** フォームの状態 */
   const [form, setForm] = useState<Omit<ItemType, "id">>({
-    name: "",
+    itemName: "",
+    lockerId: "",
     category: "",
     status: "",
     note: "",
@@ -49,7 +50,7 @@ export const EquipmentManagement = () => {
       const { id, ...item } = equipments[index];
       setForm(item);
     } else {
-      setForm({ name: "", category: "", status: "", note: "" });
+      setForm({ itemName: "", lockerId: "", category: "", status: "", note: "" });
     }
     setOpen(true);
   };
@@ -131,7 +132,7 @@ export const EquipmentManagement = () => {
             <TableBody>
               {equipments.map((eq, idx) => (
                 <TableRow key={eq.id}>
-                  <TableCell>{eq.name}</TableCell>
+                  <TableCell>{eq.itemName}</TableCell>
                   <TableCell>{eq.category}</TableCell>
                   <TableCell>{eq.status}</TableCell>
                   <TableCell>{eq.note}</TableCell>

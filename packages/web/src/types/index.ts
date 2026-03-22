@@ -6,7 +6,10 @@ export type ItemType = {
   id: number;
 
   /** 備品名 */
-  name: string;
+  itemName: string;
+
+  /** ロッカーID */
+  lockerId: string;
 
   /** カテゴリ */
   category: string;
@@ -24,7 +27,7 @@ export type LockerType = {
   id: string;
 
   /** ロッカー名 */
-  name: string;
+  lockerName: string;
 
   /** ロッカーの位置(左) */
   left: number;

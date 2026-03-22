@@ -48,9 +48,9 @@ export async function callAzureFunction(props: callAzureFunctionParams) {
     if (!response.ok) {
       throw new Error("APIエラーが発生しました");
     }
-    // レスポンスをJSON形式で返却
-    const data = await response.json();
-    return data;
+    // レスポンスをJSON形式で返却（ボディが空の場合はnullを返す）
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
   } catch (error) {
     console.error("Azure Function呼び出しエラー:", error);
     throw error;

@@ -21,7 +21,7 @@ export async function getLockers(
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
   // SQL
-  const sql = "SELECT * FROM c WHERE id LIKE %locker_ ";
+  const sql = "SELECT * FROM c WHERE c.id LIKE 'locker_%' ";
 
   // ロッカーを全取得
   const cosmosDbAccessClient = new CosmosDbAccessClient();
@@ -31,11 +31,11 @@ export async function getLockers(
   );
 
   // 呼び出し側でパースされるため、json形式に変換
-  const json = {
-    entities: entities,
-  };
+  // const json = {
+  //   entities: entities,
+  // };
 
-  return { status: 200, body: JSON.stringify(json) };
+  return { status: 200, body: JSON.stringify(entities) };
 }
 
 app.http("getLockers", {

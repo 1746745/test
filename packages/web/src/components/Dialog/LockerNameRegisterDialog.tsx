@@ -1,3 +1,4 @@
+import { useCreateLocker } from "@/hooks/useCreateLocker";
 import type { LockerType } from "@/types";
 import { TextField } from "@mui/material";
 import React from "react";
@@ -30,13 +31,15 @@ export const LockerNameRegisterDialog = ({
   // ダイアログ関連の状態
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [pendingRenameId, setPendingRenameId] = React.useState<string | null>(
-    null
+    null,
   );
 
   // 新規に追加された "name が空の" ロッカーを検知してダイアログを開く
   React.useEffect(() => {
     if (pendingRenameId) return;
-    const unnamed = lockers.find((r) => !r.name || r.name.trim() === "");
+    const unnamed = lockers.find(
+      (r) => !r.lockerName || r.lockerName.trim() === "",
+    );
     if (unnamed) {
       setPendingRenameId(unnamed.id);
       setTargetLockerName("");
@@ -52,10 +55,19 @@ export const LockerNameRegisterDialog = ({
 
     const name = targetLockerName.trim();
     if (name.length > 0) {
-      setLockers((prev) =>
-        prev.map((r) => (r.id === pendingRenameId ? { ...r, name } : r))
-      );
-
+      const locker = lockers.find((r) => r.id === pendingRenameId);
+      if (locker) {
+        const updatedLocker = { ...locker, lockerName: name };
+        // 名前確定後にDBへ登録し、返却されたIDでstateを更新
+        useCreateLocker(updatedLocker).then((res) => {
+          const dbId = res?.id ?? updatedLocker.id;
+          setLockers((prev) =>
+            prev.map((r) =>
+              r.id === pendingRenameId ? { ...updatedLocker, id: dbId } : r,
+            ),
+          );
+        });
+      }
     } else {
       // キャンセルまたは空名の場合は追加した矩形を取り除く
       setLockers((prev) => prev.filter((r) => r.id !== pendingRenameId));
@@ -63,7 +75,7 @@ export const LockerNameRegisterDialog = ({
 
     setPendingRenameId(null);
     setTargetLockerName("");
-  }, [dialogOpen, pendingRenameId, targetLockerName]);
+  }, [dialogOpen, pendingRenameId, targetLockerName, lockers]);
 
   // ダイアログのOKボタンが押されたときの処理
   const handleDialogSubmit = (name: string) => {

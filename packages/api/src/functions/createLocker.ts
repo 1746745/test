@@ -27,19 +27,20 @@ export async function createLocker(
 
   // 登録
   const cosmosDbAccessClient = new CosmosDbAccessClient();
+  const newId = `locker_${createULID()}`;
   const entities: LockerType[] = [
     {
-      id: `locker_${createULID()}`,
+      id: newId,
       lockerName: bodyJson["lockerName"],
       left: bodyJson["left"],
       top: bodyJson["top"],
-      width: bodyJson["left"],
+      width: bodyJson["width"],
       height: bodyJson["height"],
     },
   ];
   await cosmosDbAccessClient.saveLockerEntities(CONTAINER_NAME, entities);
 
-  return { status: 200 };
+  return { status: 200, body: JSON.stringify({ id: newId }) };
 }
 
 app.http("createLocker", {

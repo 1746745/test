@@ -3,6 +3,7 @@ export * from "./useCreateLocker";
 export * from "./useDeleteItem";
 export * from "./useDeleteLocker";
 export * from "./useGetItems";
+export * from "./useGetItemsByLockerId";
 export * from "./useGetLockers";
 export * from "./useUpdateItem";
 export * from "./useUpdateLocker";

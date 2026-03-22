@@ -24,21 +24,21 @@ export async function updateLocker(
   // リクエストデータを取得
   const bodyJson = await request.json();
 
-  // 削除
+  // 更新
   const cosmosDbAccessClient = new CosmosDbAccessClient();
   const entities: LockerType[] = [
     {
-      id: bodyJson["lockerId"],
+      id: bodyJson["id"],
       lockerName: bodyJson["lockerName"],
       left: bodyJson["left"],
       top: bodyJson["top"],
-      width: bodyJson["left"],
+      width: bodyJson["width"],
       height: bodyJson["height"],
     },
   ];
   await cosmosDbAccessClient.saveLockerEntities(CONTAINER_NAME, entities);
 
-  return { status: 200 };
+  return { status: 200, body: JSON.stringify({ success: true }) };
 }
 
 app.http("updateLocker", {

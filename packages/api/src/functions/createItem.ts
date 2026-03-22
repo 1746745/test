@@ -39,7 +39,7 @@ export async function createItem(
   ];
   await cosmosDbAccessClient.saveItemEntities(CONTAINER_NAME, entities);
 
-  return { status: 200 };
+  return { status: 200, body: JSON.stringify({ success: true }) };
 }
 
 app.http("createItem", {

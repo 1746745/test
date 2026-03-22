@@ -1,8 +1,10 @@
+import { AppDialog } from "@/components/Dialog/AppDialog";
 import { DeleteButton } from "@/components/Button/DeleteButton";
-import { useDeleteLocker, useGetItems } from "@/hooks";
+import { useDeleteLocker, useGetItems, useUpdateLocker } from "@/hooks";
 import type { LockerType } from "@/types";
-import { Box, Divider, List, ListItem, Typography } from "@mui/material";
+import { Box, Divider, List, ListItem, TextField, Typography } from "@mui/material";
 import React from "react";
+import { ItemList } from "./ItemList";
 
 /** ロッカーリストコンポーネントのプロパティ */
 interface LockerListProps {
@@ -36,14 +38,30 @@ export const LockerList = ({
     fetchData();
   }, []);
 
+  const selectedLocker = lockers.find((r) => r.id === selectedId) ?? null;
+
+  // リネーム用の状態
+  const [renamingLocker, setRenamingLocker] = React.useState<LockerType | null>(null);
+  const [renameValue, setRenameValue] = React.useState("");
+
+  const handleRenameSubmit = async () => {
+    if (!renamingLocker || !renameValue.trim()) return;
+    const updated = { ...renamingLocker, lockerName: renameValue.trim() };
+    setLockers((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    await useUpdateLocker(updated);
+    setRenamingLocker(null);
+  };
+
   return (
-    <>
+    <Box sx={{ display: "flex", flexShrink: 0, width: 560 }}>
       <Box
         sx={{
-          width: 560,
+          width: selectedLocker ? 280 : 560,
           borderLeft: "1px solid #eee",
           p: 1,
           boxSizing: "border-box",
+          overflowY: "auto",
+          maxHeight: "80vh",
         }}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -63,7 +81,14 @@ export const LockerList = ({
                   sx={{ display: "flex", alignItems: "center", width: "100%" }}
                 >
                   {/** ロッカー */}
-                  <Box sx={{ flex: 1 }} onClick={() => setSelectedId(r.id)}>
+                  <Box
+                    sx={{ flex: 1 }}
+                    onClick={() => setSelectedId(r.id)}
+                    onDoubleClick={() => {
+                      setRenamingLocker(r);
+                      setRenameValue(r.lockerName);
+                    }}
+                  >
                     <Box
                       sx={{
                         p: 0.5,
@@ -95,7 +120,7 @@ export const LockerList = ({
                               : "text.primary",
                         }}
                       >
-                        {r.name}
+                        {r.lockerName}
                       </Typography>
 
                       <Typography
@@ -106,9 +131,9 @@ export const LockerList = ({
                         }}
                       >
                         {`座標（L:${Math.round(r.left)} T:${Math.round(
-                          r.top
+                          r.top,
                         )} W:${Math.round(r.width)} H:${Math.round(
-                          r.height
+                          r.height,
                         )}）`}
                       </Typography>
                     </Box>
@@ -133,6 +158,29 @@ export const LockerList = ({
           </List>
         )}
       </Box>
-    </>
+      {selectedLocker && <ItemList locker={selectedLocker} />}
+
+      <AppDialog
+        open={renamingLocker !== null}
+        onClose={() => setRenamingLocker(null)}
+        onCancel={() => setRenamingLocker(null)}
+        onSubmit={handleRenameSubmit}
+        title="ロッカー名を変更"
+        content={
+          <TextField
+            autoFocus
+            label="名前"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleRenameSubmit(); }}
+            fullWidth
+            size="small"
+            sx={{ mt: 1 }}
+          />
+        }
+        cancelText="キャンセル"
+        submitText="変更"
+      />
+    </Box>
   );
 };

@@ -28,7 +28,7 @@ export async function deleteItem(
   const cosmosDbAccessClient = new CosmosDbAccessClient();
   const entities: ItemType[] = [
     {
-      id: bodyJson["itemId"],
+      id: bodyJson["id"],
       itemName: bodyJson["itemName"],
       lockerId: bodyJson["lockerId"],
       category: bodyJson["category"],
@@ -38,7 +38,7 @@ export async function deleteItem(
   ];
   await cosmosDbAccessClient.deleteItemEntities(CONTAINER_NAME, entities);
 
-  return { status: 200 };
+  return { status: 200, body: JSON.stringify({ success: true }) };
 }
 
 app.http("deleteItem", {

@@ -1,8 +1,8 @@
+import { AppDialog } from "@/components/Dialog/AppDialog";
 import { LockerNameRegisterDialog } from "@/components";
 import { useGetLockers, useUpdateLocker } from "@/hooks/";
-import { useCreateLocker } from "@/hooks/useCreateLocker";
 import type { LockerType } from "@/types";
-import { Box } from "@mui/material";
+import { Box, TextField } from "@mui/material";
 import Paper from "@mui/material/Paper";
 import React from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
@@ -36,6 +36,18 @@ export const ZoomPanPinchWrapper = () => {
   // ロッカー名
   const [targetLockerName, setTargetLockerName] = React.useState<string>("");
 
+  // リネーム用の状態
+  const [renamingLocker, setRenamingLocker] = React.useState<LockerType | null>(null);
+  const [renameValue, setRenameValue] = React.useState("");
+
+  const handleRenameSubmit = async () => {
+    if (!renamingLocker || !renameValue.trim()) return;
+    const updated = { ...renamingLocker, lockerName: renameValue.trim() };
+    setLockers((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    await useUpdateLocker(updated);
+    setRenamingLocker(null);
+  };
+
   // 編集モード: 'none' | 'move' | 'resize'
   const editMode = React.useRef<"none" | "move" | "resize">("none");
 
@@ -43,6 +55,7 @@ export const ZoomPanPinchWrapper = () => {
   const editRef = React.useRef<{
     startMouse: { x: number; y: number };
     rectBefore: { left: number; top: number; width: number; height: number };
+    locker: LockerType;
   } | null>(null);
 
   // 画像要素へのref（座標計算やイベント登録用）
@@ -60,15 +73,13 @@ export const ZoomPanPinchWrapper = () => {
     const img = imgRef.current;
     if (!img) return null;
     const rect = img.getBoundingClientRect();
-    const { scale, positionX, positionY } = transformStateRef.current;
+    const { scale } = transformStateRef.current;
 
-    // クライアント座標から画像要素内の座標を計算
-    const offsetX = clientX - rect.left;
-    const offsetY = clientY - rect.top;
-
-    // ズーム・パン変換を逆変換して元の画像座標を取得
-    const x = (offsetX - positionX) / scale;
-    const y = (offsetY - positionY) / scale;
+    // TransformComponentによる変換を考慮した座標計算
+    // rect.left/topは既にズーム・パンが適用された位置
+    // そのため、単純にrectからの相対位置を計算し、scaleで割るだけ
+    const x = (clientX - rect.left) / scale;
+    const y = (clientY - rect.top) / scale;
 
     return { x, y };
   };
@@ -125,7 +136,7 @@ export const ZoomPanPinchWrapper = () => {
             };
           }
           return r;
-        })
+        }),
       );
       e.preventDefault();
       e.stopPropagation();
@@ -159,24 +170,40 @@ export const ZoomPanPinchWrapper = () => {
       const locker: LockerType = {
         // TODO IDはAPI側で自動生成して上書きされる
         id: String(Date.now()) + Math.random().toString(36).slice(2, 7),
-        name: targetLockerName,
+        lockerName: targetLockerName,
         left,
         top,
         width,
         height,
       };
 
-      // 幅・高さが0に近いものは追加しない
+      // 幅・高さが0に近いものは追加しない（DB登録はダイアログで名前確定後に行う）
       if (width > 2 && height > 2) {
         setLockers((prev) => [...prev, locker]);
-
-        // DBに登録
-        useCreateLocker(locker);
       }
     }
 
-    // 編集モードがアクティブなら終了
-    if (editMode.current !== "none") {
+    // 編集モードがアクティブなら終了（完了後の座標でDBを更新）
+    if (editMode.current !== "none" && editRef.current) {
+      const deltaX = coords ? coords.x - editRef.current.startMouse.x : 0;
+      const deltaY = coords ? coords.y - editRef.current.startMouse.y : 0;
+      const before = editRef.current.rectBefore;
+      const baseLocker = editRef.current.locker;
+      let updatedLocker: LockerType;
+      if (editMode.current === "move") {
+        updatedLocker = {
+          ...baseLocker,
+          left: before.left + deltaX,
+          top: before.top + deltaY,
+        };
+      } else {
+        updatedLocker = {
+          ...baseLocker,
+          width: Math.max(4, before.width + deltaX),
+          height: Math.max(4, before.height + deltaY),
+        };
+      }
+      useUpdateLocker(updatedLocker);
       editMode.current = "none";
       editRef.current = null;
     }
@@ -199,12 +226,12 @@ export const ZoomPanPinchWrapper = () => {
     e: React.MouseEvent,
     r: {
       id: string;
-      name: string;
+      lockerName: string;
       left: number;
       top: number;
       width: number;
       height: number;
-    }
+    },
   ) => {
     // 左ボタンのみ
     if (e.button !== 0) return;
@@ -214,7 +241,7 @@ export const ZoomPanPinchWrapper = () => {
 
     const locker: LockerType = {
       id: r.id,
-      name: r.name,
+      lockerName: r.lockerName,
       left: r.left,
       top: r.top,
       width: r.width,
@@ -225,10 +252,8 @@ export const ZoomPanPinchWrapper = () => {
     editRef.current = {
       startMouse: getRelativeCoordsFromClient(e.clientX, e.clientY)!,
       rectBefore: locker,
+      locker,
     };
-
-    // DBを更新
-    useUpdateLocker(locker);
   };
 
   /**
@@ -242,12 +267,12 @@ export const ZoomPanPinchWrapper = () => {
     e: React.MouseEvent,
     r: {
       id: string;
-      name: string;
+      lockerName: string;
       left: number;
       top: number;
       width: number;
       height: number;
-    }
+    },
   ) => {
     if (e.button !== 0) return;
     e.stopPropagation();
@@ -256,7 +281,7 @@ export const ZoomPanPinchWrapper = () => {
 
     const locker: LockerType = {
       id: r.id,
-      name: r.name,
+      lockerName: r.lockerName,
       left: r.left,
       top: r.top,
       width: r.width,
@@ -267,10 +292,8 @@ export const ZoomPanPinchWrapper = () => {
     editRef.current = {
       startMouse: getRelativeCoordsFromClient(e.clientX, e.clientY)!,
       rectBefore: locker,
+      locker,
     };
-
-    // DBを更新
-    useUpdateLocker(locker);
   };
 
   /**
@@ -328,6 +351,7 @@ export const ZoomPanPinchWrapper = () => {
 
   return (
     <Box ref={rootRef} sx={{ display: "flex", width: "100%", gap: 2 }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
       <TransformWrapper
         onTransformed={(ref) => {
           // ズーム・パン状態を保存
@@ -385,6 +409,29 @@ export const ZoomPanPinchWrapper = () => {
               setTargetLockerName={setTargetLockerName}
             />
 
+            {/** ロッカー名変更ダイアログ */}
+            <AppDialog
+              open={renamingLocker !== null}
+              onClose={() => setRenamingLocker(null)}
+              onCancel={() => setRenamingLocker(null)}
+              onSubmit={handleRenameSubmit}
+              title="ロッカー名を変更"
+              content={
+                <TextField
+                  autoFocus
+                  label="名前"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleRenameSubmit(); }}
+                  fullWidth
+                  size="small"
+                  sx={{ mt: 1 }}
+                />
+              }
+              cancelText="キャンセル"
+              submitText="変更"
+            />
+
             {/** 選択範囲の表示 */}
             {selectionVisible && startPoint.current && currentPoint && (
               <div style={calcSelectionStyle()} />
@@ -397,6 +444,11 @@ export const ZoomPanPinchWrapper = () => {
                 <div
                   key={r.id}
                   onMouseDown={(e) => handleRectMouseDown(e, r)}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    setRenamingLocker(r);
+                    setRenameValue(r.lockerName);
+                  }}
                   style={{
                     position: "absolute",
                     left: r.left,
@@ -437,6 +489,7 @@ export const ZoomPanPinchWrapper = () => {
           </Paper>
         </TransformComponent>
       </TransformWrapper>
+      </Box>
 
       {/* 右サイドバー: ロッカーリスト */}
       <LockerList

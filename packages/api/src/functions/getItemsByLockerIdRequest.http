@@ -1,0 +1,2 @@
+GET http://localhost:7071/api/getItemsByLockerId?lockerid=locker_123 HTTP/1.1
+Accept: application/json
