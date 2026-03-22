@@ -1,6 +1,6 @@
 import { AppDialog } from "@/components/Dialog/AppDialog";
 import { LockerNameRegisterDialog } from "@/components";
-import { useGetLockers, useUpdateLocker } from "@/hooks/";
+import { useGetItems, useGetLockers, useUpdateLocker } from "@/hooks/";
 import type { LockerType } from "@/types";
 import { Box, TextField } from "@mui/material";
 import Paper from "@mui/material/Paper";
@@ -13,7 +13,11 @@ import { LockerList } from "./LockerList";
  *
  * @returns ZoomPanPinchWrapper コンポーネント
  */
-export const ZoomPanPinchWrapper = () => {
+interface ZoomPanPinchWrapperProps {
+  searchQuery?: string;
+}
+
+export const ZoomPanPinchWrapper = ({ searchQuery = "" }: ZoomPanPinchWrapperProps) => {
   // コンポーネント全体のref（外部クリック判定用）
   const rootRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -29,6 +33,33 @@ export const ZoomPanPinchWrapper = () => {
 
   // 作成済みロッカーの配列
   const [lockers, setLockers] = React.useState<LockerType[]>([]);
+
+  // 検索によるフィルタリング（null = フィルタなし）
+  const [filteredLockerIds, setFilteredLockerIds] = React.useState<Set<string> | null>(null);
+
+  React.useEffect(() => {
+    const tokens = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) {
+      setFilteredLockerIds(null);
+      return;
+    }
+    useGetItems().then((items) => {
+      const matched = new Set(
+        items
+          .filter((item) => {
+            const text = [item.itemName ?? "", item.category ?? "", item.status ?? "", item.note ?? ""]
+              .join(" ").toLowerCase();
+            return tokens.every((token) => text.includes(token));
+          })
+          .map((item) => item.lockerId)
+      );
+      setFilteredLockerIds(matched);
+    });
+  }, [searchQuery]);
+
+  const displayedLockers = filteredLockerIds === null
+    ? lockers
+    : lockers.filter((r) => filteredLockerIds.has(r.id));
 
   // 選択中のロッカーID
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
@@ -67,6 +98,7 @@ export const ZoomPanPinchWrapper = () => {
     positionX: number;
     positionY: number;
   }>({ scale: 1, positionX: 0, positionY: 0 });
+
 
   // 画像内座標取得用（ズーム・パン変換を考慮）
   const getRelativeCoordsFromClient = (clientX: number, clientY: number) => {
@@ -438,7 +470,7 @@ export const ZoomPanPinchWrapper = () => {
             )}
 
             {/* 保存済みロッカーの描画 */}
-            {lockers.map((r) => {
+            {displayedLockers.map((r) => {
               const isSelected = selectedId === r.id;
               return (
                 <div
@@ -456,10 +488,10 @@ export const ZoomPanPinchWrapper = () => {
                     width: r.width,
                     height: r.height,
                     border: isSelected
-                      ? "2px solid rgba(255,120,0,0.95)"
+                      ? "2px solid rgba(0,120,212,0.95)"
                       : "2px dashed rgba(255,120,0,0.95)",
                     backgroundColor: isSelected
-                      ? "rgba(255,120,0,0.12)"
+                      ? "rgba(0,120,212,0.15)"
                       : "rgba(255,120,0,0.08)",
                     cursor: isSelected ? "move" : "pointer",
                     boxSizing: "border-box",
@@ -477,7 +509,7 @@ export const ZoomPanPinchWrapper = () => {
                         right: -6,
                         bottom: -6,
                         background: "white",
-                        border: "2px solid rgba(255,120,0,0.95)",
+                        border: "2px solid rgba(0,120,212,0.95)",
                         cursor: "nwse-resize",
                         zIndex: 20,
                       }}
@@ -493,7 +525,7 @@ export const ZoomPanPinchWrapper = () => {
 
       {/* 右サイドバー: ロッカーリスト */}
       <LockerList
-        lockers={lockers}
+        lockers={displayedLockers}
         setLockers={setLockers}
         selectedId={selectedId}
         setSelectedId={setSelectedId}
